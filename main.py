@@ -1,8 +1,9 @@
 import os
 import sqlite3
 import json
+import time
 import traceback
-import time  # <-- Asegúrate de tener este import al principio del archivo
+from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
 from fastapi import FastAPI, UploadFile, File, Body, HTTPException
@@ -82,7 +83,6 @@ def home():
             recordBtn.addEventListener('click', async () => {
                 if (!isRecording) {
                     try {
-                        // Configuración de audio optimizada para voz clara
                         const stream = await navigator.mediaDevices.getUserMedia({ 
                             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
                         });
@@ -145,7 +145,6 @@ def home():
                     <div class="bg-slate-800 rounded-2xl shadow-xl p-5 border border-slate-700 flex flex-col gap-4 text-xs text-left">
                         <h2 class="text-base font-bold text-blue-400 border-b border-slate-700 pb-2">📋 Revisión y Ajustes de Última Hora</h2>
                         
-                        <!-- Transcripción editable por si quiere matizar algo -->
                         <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700">
                             <strong class="text-blue-300 block mb-1">🎤 Transcripción interpretada (jerga corregida):</strong>
                             <p class="text-slate-300 italic">"${p.transcripcion || 'Audio procesado'}"</p>
@@ -231,9 +230,16 @@ def home():
                             </div>
                         </div>
 
-                        <button onclick="generarPDFFinal()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg text-sm cursor-pointer">
-                            📄 Confirmar y Descargar Presupuesto PDF
-                        </button>
+                        <!-- BOTONES DE ACCIÓN: PDF Y WHATSAPP -->
+                        <div class="flex flex-col gap-2.5 mt-1">
+                            <button onclick="generarPDFFinal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg text-sm cursor-pointer">
+                                📄 1. Confirmar y Descargar Presupuesto PDF
+                            </button>
+                            
+                            <button onclick="enviarPorWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg text-sm cursor-pointer flex items-center justify-center gap-2">
+                                📲 2. Enviar Resumen por WhatsApp al Cliente
+                            </button>
+                        </div>
                     </div>
                 `;
                 container.classList.remove('hidden');
@@ -283,6 +289,24 @@ def home():
                 document.getElementById('spanSubtotal').textContent = subtotal.toFixed(2) + " €";
                 document.getElementById('spanIva').textContent = importeIva.toFixed(2) + " €";
                 document.getElementById('spanTotal').textContent = totalConIva.toFixed(2) + " €";
+            }
+
+            function enviarPorWhatsApp() {
+                const cliente = document.getElementById('editCliente').value;
+                const resumen = document.getElementById('editResumen').value;
+                const subtotal = document.getElementById('spanSubtotal').textContent;
+                const ivaPorc = document.getElementById('selectIva').value;
+                const total = document.getElementById('spanTotal').textContent;
+
+                const mensaje = `Hola *${cliente}*, te envío el resumen del presupuesto de fontanería:\n\n` +
+                                `🔧 *Trabajo:* ${resumen}\n` +
+                                `💶 *Base Imponible:* ${subtotal}\n` +
+                                `🧾 *IVA (${ivaPorc}%):* Incluido\n` +
+                                `✅ *TOTAL PRESUPUESTO:* *${total}*\n\n` +
+                                `_(Te adjunto a continuación el documento PDF detallado)_`;
+
+                const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+                window.open(url, '_blank');
             }
 
             async function generarPDFFinal() {
@@ -415,11 +439,10 @@ async def api_analizar(file: UploadFile = File(...)):
         }
         """
         
-        # Sistema anti-caídas (Reintentos automáticos ante error 503 de alta demanda)
         modelos_a_probar = [
             'gemini-3.8-flash',
-            'gemini-3.8-flash',  # Segundo intento tras breve pausa
-            'gemini-3.8-pro'     # Respaldo si el modelo Flash sigue saturado
+            'gemini-3.8-flash',
+            'gemini-3.8-pro'
         ]
         
         response = None
@@ -432,14 +455,14 @@ async def api_analizar(file: UploadFile = File(...)):
                     contents=[audio_file, prompt],
                     config={'response_mime_type': 'application/json'}
                 )
-                break  # Si funciona a la primera, salimos del bucle inmediatamente
+                break
             except Exception as err:
                 ultimo_error = err
                 if "503" in str(err) or "UNAVAILABLE" in str(err):
-                    time.sleep(2 * (intento + 1))  # Espera 2s en el 1er fallo, 4s en el 2º
+                    time.sleep(2 * (intento + 1))
                     continue
                 else:
-                    raise err  # Si es otro tipo de error, lo lanza normal
+                    raise err
                     
         if response is None:
             raise ultimo_error
@@ -461,7 +484,7 @@ async def api_analizar(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 # ==========================================
-# 3. GENERADOR DE PDF CON DESGLOSE DE IVA
+# 3. GENERADOR DE PDF CON NUMERACIÓN, FECHA E IVA
 # ==========================================
 @app.post("/api/generar-pdf")
 async def api_generar_pdf(presupuesto: dict = Body(...)):
@@ -470,13 +493,21 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
     story = []
     styles = getSampleStyleSheet()
     
+    ahora = datetime.now()
+    fecha_str = ahora.strftime("%d/%m/%Y")
+    num_presupuesto = f"PRE-{ahora.strftime('%Y%m%d-%H%M')}"
+    
     estilo_titulo = ParagraphStyle('Titulo', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor("#1d4ed8"), spaceAfter=4)
     estilo_sub = ParagraphStyle('Sub', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#64748b"), spaceAfter=14)
     estilo_h2 = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor("#0f172a"), spaceBefore=12, spaceAfter=6)
     estilo_texto = ParagraphStyle('Texto', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#334155"), leading=14)
+    estilo_legal = ParagraphStyle('Legal', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor("#94a3b8"), spaceBefore=20)
     
     story.append(Paragraph(f"🔧 {NOMBRE_COMERCIAL_DEFAULT}", estilo_titulo))
-    story.append(Paragraph(f"Teléfono: {TELEFONO_DEFAULT} | Presupuesto Oficial y Hoja de Trabajo", estilo_sub))
+    story.append(Paragraph(
+        f"Teléfono: {TELEFONO_DEFAULT} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Nº Presupuesto:</b> {num_presupuesto} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Fecha:</b> {fecha_str}", 
+        estilo_sub
+    ))
     
     story.append(Paragraph("<b>1. Datos del Cliente y Memoria de Actuación</b>", estilo_h2))
     story.append(Paragraph(f"<b>Cliente:</b> {presupuesto.get('cliente', 'Cliente')} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Tipo de servicio:</b> {presupuesto.get('urgencia', 'Normal')}", estilo_texto))
@@ -557,6 +588,13 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
         story.append(Paragraph("<b>Anexo Interno: Herramientas recomendadas para la furgoneta</b>", estilo_h2))
         story.append(Paragraph(", ".join(herramientas), estilo_texto))
     
+    # Pie legal de validez
+    story.append(Paragraph(
+        "Condiciones: Este presupuesto tiene una validez de 15 días naturales desde su fecha de emisión. "
+        "Cualquier vicio oculto o avería no visible tras la apertura de rozas será comunicado al cliente antes de su intervención.",
+        estilo_legal
+    ))
+
     doc.build(story)
     return {"estado": "ok", "pdf_url": "/descargar-pdf"}
 
