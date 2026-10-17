@@ -295,7 +295,7 @@ async def api_analizar(file: UploadFile = File(...)):
         """
         
         response = client.models.generate_content(
-            model='gemini-1.5-flash',  # <-- Sin el prefijo "models/"
+            model='gemini-2.5-flash',  # <-- Modelo actualizado y compatible
             contents=[audio_file, prompt],
             config={'response_mime_type': 'application/json'}
         )
