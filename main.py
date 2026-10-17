@@ -2,6 +2,7 @@ import os
 import sqlite3
 import json
 import traceback
+import time  # <-- Asegúrate de tener este import al principio del archivo
 from dotenv import load_dotenv
 from google import genai
 from fastapi import FastAPI, UploadFile, File, Body, HTTPException
@@ -414,11 +415,34 @@ async def api_analizar(file: UploadFile = File(...)):
         }
         """
         
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=[audio_file, prompt],
-            config={'response_mime_type': 'application/json'}
-        )
+        # Sistema anti-caídas (Reintentos automáticos ante error 503 de alta demanda)
+        modelos_a_probar = [
+            'gemini-3.8-flash',
+            'gemini-3.8-flash',  # Segundo intento tras breve pausa
+            'gemini-3.8-pro'     # Respaldo si el modelo Flash sigue saturado
+        ]
+        
+        response = None
+        ultimo_error = None
+        
+        for intento, modelo_actual in enumerate(modelos_a_probar):
+            try:
+                response = client.models.generate_content(
+                    model=modelo_actual,
+                    contents=[audio_file, prompt],
+                    config={'response_mime_type': 'application/json'}
+                )
+                break  # Si funciona a la primera, salimos del bucle inmediatamente
+            except Exception as err:
+                ultimo_error = err
+                if "503" in str(err) or "UNAVAILABLE" in str(err):
+                    time.sleep(2 * (intento + 1))  # Espera 2s en el 1er fallo, 4s en el 2º
+                    continue
+                else:
+                    raise err  # Si es otro tipo de error, lo lanza normal
+                    
+        if response is None:
+            raise ultimo_error
         
         texto_limpio = response.text.strip()
         if texto_limpio.startswith("```json"):
