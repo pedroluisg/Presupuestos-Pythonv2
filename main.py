@@ -40,7 +40,7 @@ def home():
     <body class="bg-slate-900 text-slate-100 min-h-screen p-4 flex flex-col items-center pb-12">
         <div class="w-full max-w-lg bg-slate-800 rounded-2xl shadow-2xl p-6 border border-slate-700 mt-2 text-center">
             <h1 class="text-2xl font-extrabold text-blue-400 mb-1 flex items-center justify-center gap-2">🔧 Asistente de Fontanería</h1>
-            <p class="text-slate-400 text-xs mb-6">Describe la obra en voz alta o sube un audio para extraer tareas, materiales, herramientas y presupuesto.</p>
+            <p class="text-slate-400 text-xs mb-6">Habla con naturalidad usando tu jerga habitual. La IA transcribirá y desglosará tareas, materiales, herramientas e IVA.</p>
             
             <!-- GRABACIÓN EN DIRECTO -->
             <div class="flex flex-col items-center gap-3 mb-5">
@@ -49,12 +49,12 @@ def home():
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
                 </button>
-                <div id="recordStatus" class="text-xs font-medium text-slate-300">Toca el micrófono para grabar en vivo</div>
+                <div id="recordStatus" class="text-xs font-medium text-slate-300">Toca el micrófono para describir la obra</div>
             </div>
 
             <!-- SUBIDA DE ARCHIVO -->
             <div class="border-t border-slate-700 pt-4">
-                <p class="text-xs text-slate-400 mb-2">O adjunta una grabación guardada:</p>
+                <p class="text-xs text-slate-400 mb-2">O adjunta una nota de voz guardada:</p>
                 <div class="flex gap-2">
                     <input type="file" id="audioFile" accept="audio/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-700 file:text-blue-300 hover:file:bg-slate-600 cursor-pointer">
                     <button id="uploadBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition text-xs whitespace-nowrap shadow">
@@ -65,7 +65,7 @@ def home():
             
             <div id="loading" class="hidden text-center py-6">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-2"></div>
-                <p class="text-xs text-blue-300">Analizando obra, materiales y herramientas con IA...</p>
+                <p class="text-xs text-blue-300">Transcribiendo jerga técnica y calculando presupuesto...</p>
             </div>
         </div>
 
@@ -81,7 +81,10 @@ def home():
             recordBtn.addEventListener('click', async () => {
                 if (!isRecording) {
                     try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        // Configuración de audio optimizada para voz clara
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+                        });
                         mediaRecorder = new MediaRecorder(stream);
                         audioChunks = [];
                         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
@@ -92,15 +95,15 @@ def home():
                         mediaRecorder.start();
                         isRecording = true;
                         recordBtn.className = "w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center shadow-lg transition animate-pulse border-4 border-red-500 cursor-pointer";
-                        recordStatus.textContent = "🔴 Grabando... Toca de nuevo para terminar.";
+                        recordStatus.textContent = "🔴 Escuchando... Toca para terminar.";
                     } catch (err) {
-                        alert("No se pudo acceder al micrófono. Revisa los permisos.");
+                        alert("No se pudo acceder al micrófono. Revisa los permisos del navegador.");
                     }
                 } else {
                     mediaRecorder.stop();
                     isRecording = false;
                     recordBtn.className = "w-20 h-20 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition transform active:scale-95 border-4 border-red-400/40 cursor-pointer";
-                    recordStatus.textContent = "Toca el micrófono para grabar en vivo";
+                    recordStatus.textContent = "Toca el micrófono para describir la obra";
                 }
             });
 
@@ -139,12 +142,12 @@ def home():
                 const container = document.getElementById('resultadoContainer');
                 container.innerHTML = `
                     <div class="bg-slate-800 rounded-2xl shadow-xl p-5 border border-slate-700 flex flex-col gap-4 text-xs text-left">
-                        <h2 class="text-base font-bold text-blue-400 border-b border-slate-700 pb-2">📋 Revisión y Cambios de Última Hora</h2>
+                        <h2 class="text-base font-bold text-blue-400 border-b border-slate-700 pb-2">📋 Revisión y Ajustes de Última Hora</h2>
                         
-                        <!-- Transcripción detectada -->
-                        <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700 text-slate-300 italic">
-                            <strong class="text-slate-400 not-italic block mb-1">🎤 Transcripción del audio:</strong>
-                            "${p.transcripcion || 'Audio procesado'}"
+                        <!-- Transcripción editable por si quiere matizar algo -->
+                        <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700">
+                            <strong class="text-blue-300 block mb-1">🎤 Transcripción interpretada (jerga corregida):</strong>
+                            <p class="text-slate-300 italic">"${p.transcripcion || 'Audio procesado'}"</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
@@ -159,7 +162,7 @@ def home():
                         </div>
 
                         <div>
-                            <label class="text-slate-400 block mb-1">Resumen de la obra:</label>
+                            <label class="text-slate-400 block mb-1">Memoria técnica de la actuación:</label>
                             <textarea id="editResumen" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" rows="2">${p.resumen_actuacion || ''}</textarea>
                         </div>
 
@@ -183,13 +186,13 @@ def home():
                         <!-- 2. MATERIALES NECESARIOS -->
                         <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700">
                             <div class="flex justify-between items-center mb-2">
-                                <span class="font-bold text-amber-300">📦 Materiales (Cant. | Material | Precio €)</span>
+                                <span class="font-bold text-amber-300">📦 Materiales (Cant. | Material | Precio U. €)</span>
                                 <button onclick="agregarMaterial()" class="bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 px-2 py-1 rounded text-[11px]">+ Añadir material</button>
                             </div>
                             <div id="materialesContainer" class="flex flex-col gap-2">
                                 ${(p.materiales || []).map(m => `
                                     <div class="flex gap-1.5 items-center material-row">
-                                        <input type="number" value="${m.cantidad}" class="w-12 bg-slate-800 border border-slate-700 rounded p-1.5 text-center text-white mat-cant" onchange="recalcularTotal()">
+                                        <input type="number" step="0.5" value="${m.cantidad}" class="w-14 bg-slate-800 border border-slate-700 rounded p-1.5 text-center text-white mat-cant" onchange="recalcularTotal()">
                                         <input type="text" value="${m.material}" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white mat-nombre" placeholder="Material">
                                         <input type="number" step="0.01" value="${m.precio_unitario}" class="w-20 bg-slate-800 border border-slate-700 rounded p-1.5 text-right text-amber-300 font-semibold mat-precio" onchange="recalcularTotal()">
                                         <button onclick="this.parentElement.remove(); recalcularTotal();" class="text-red-400 hover:text-red-300 px-1">✕</button>
@@ -200,18 +203,35 @@ def home():
 
                         <!-- 3. HERRAMIENTAS RECOMENDADAS -->
                         <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700">
-                            <label class="font-bold text-purple-300 block mb-1">🧰 Herramientas a llevar a la obra (Checklist):</label>
+                            <label class="font-bold text-purple-300 block mb-1">🧰 Herramientas para llevar a la obra (uso interno):</label>
                             <input type="text" id="editHerramientas" value="${(p.herramientas || []).join(', ')}" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-200" placeholder="Separadas por comas...">
                         </div>
 
-                        <!-- TOTAL PRESUPUESTO -->
-                        <div class="flex justify-between items-center bg-slate-900 p-3 rounded-xl border border-green-500/30">
-                            <span class="font-bold text-slate-300 text-sm">TOTAL PRESUPUESTO (€):</span>
-                            <input type="number" step="0.01" id="editTotal" value="0" class="w-28 bg-slate-800 border border-slate-600 rounded-lg p-2 text-right text-yellow-400 font-extrabold text-base">
+                        <!-- DESGLOSE ECONÓMICO E IVA -->
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 flex flex-col gap-2">
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Subtotal (Base Imponible):</span>
+                                <span id="spanSubtotal" class="font-semibold">0.00 €</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <div class="flex items-center gap-2">
+                                    <span>IVA aplicable:</span>
+                                    <select id="selectIva" onchange="recalcularTotal()" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white">
+                                        <option value="21" selected>21% (Estándar)</option>
+                                        <option value="10">10% (Reforma vivienda)</option>
+                                        <option value="0">0% (Sin IVA)</option>
+                                    </select>
+                                </div>
+                                <span id="spanIva" class="font-semibold text-blue-300">0.00 €</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t border-slate-700 pt-2 mt-1">
+                                <span class="font-bold text-white text-sm">TOTAL PRESUPUESTO (IVA incl.):</span>
+                                <span id="spanTotal" class="font-extrabold text-yellow-400 text-lg">0.00 €</span>
+                            </div>
                         </div>
 
                         <button onclick="generarPDFFinal()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg text-sm cursor-pointer">
-                            📄 Confirmar Cambios y Descargar PDF
+                            📄 Confirmar y Descargar Presupuesto PDF
                         </button>
                     </div>
                 `;
@@ -223,7 +243,7 @@ def home():
                 const div = document.createElement('div');
                 div.className = "flex gap-2 items-center tarea-row";
                 div.innerHTML = `
-                    <input type="text" value="Nueva tarea" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white tarea-concepto">
+                    <input type="text" value="Mano de obra adicional" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white tarea-concepto">
                     <input type="number" step="0.01" value="40.00" class="w-24 bg-slate-800 border border-slate-700 rounded p-1.5 text-right text-green-300 font-semibold tarea-precio" onchange="recalcularTotal()">
                     <button onclick="this.parentElement.remove(); recalcularTotal();" class="text-red-400 hover:text-red-300 px-1">✕</button>
                 `;
@@ -235,9 +255,9 @@ def home():
                 const div = document.createElement('div');
                 div.className = "flex gap-1.5 items-center material-row";
                 div.innerHTML = `
-                    <input type="number" value="1" class="w-12 bg-slate-800 border border-slate-700 rounded p-1.5 text-center text-white mat-cant" onchange="recalcularTotal()">
-                    <input type="text" value="Nuevo material" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white mat-nombre">
-                    <input type="number" step="0.01" value="10.00" class="w-20 bg-slate-800 border border-slate-700 rounded p-1.5 text-right text-amber-300 font-semibold mat-precio" onchange="recalcularTotal()">
+                    <input type="number" step="0.5" value="1" class="w-14 bg-slate-800 border border-slate-700 rounded p-1.5 text-center text-white mat-cant" onchange="recalcularTotal()">
+                    <input type="text" value="Pieza / Material" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white mat-nombre">
+                    <input type="number" step="0.01" value="12.00" class="w-20 bg-slate-800 border border-slate-700 rounded p-1.5 text-right text-amber-300 font-semibold mat-precio" onchange="recalcularTotal()">
                     <button onclick="this.parentElement.remove(); recalcularTotal();" class="text-red-400 hover:text-red-300 px-1">✕</button>
                 `;
                 document.getElementById('materialesContainer').appendChild(div);
@@ -245,24 +265,34 @@ def home():
             }
 
             function recalcularTotal() {
-                let suma = 0;
+                let subtotal = 0;
                 document.querySelectorAll('.tarea-precio').forEach(inp => {
-                    suma += parseFloat(inp.value) || 0;
+                    subtotal += parseFloat(inp.value) || 0;
                 });
                 document.querySelectorAll('.material-row').forEach(row => {
                     const cant = parseFloat(row.querySelector('.mat-cant').value) || 0;
                     const precio = parseFloat(row.querySelector('.mat-precio').value) || 0;
-                    suma += (cant * precio);
+                    subtotal += (cant * precio);
                 });
-                document.getElementById('editTotal').value = suma.toFixed(2);
+                
+                const ivaPorcentaje = parseFloat(document.getElementById('selectIva').value) || 0;
+                const importeIva = subtotal * (ivaPorcentaje / 100);
+                const totalConIva = subtotal + importeIva;
+
+                document.getElementById('spanSubtotal').textContent = subtotal.toFixed(2) + " €";
+                document.getElementById('spanIva').textContent = importeIva.toFixed(2) + " €";
+                document.getElementById('spanTotal').textContent = totalConIva.toFixed(2) + " €";
             }
 
             async function generarPDFFinal() {
+                let subtotal = 0;
                 const tareas = [];
                 document.querySelectorAll('.tarea-row').forEach(row => {
+                    const pr = parseFloat(row.querySelector('.tarea-precio').value) || 0;
+                    subtotal += pr;
                     tareas.push({
                         concepto: row.querySelector('.tarea-concepto').value,
-                        precio: parseFloat(row.querySelector('.tarea-precio').value) || 0
+                        precio: pr
                     });
                 });
 
@@ -270,13 +300,19 @@ def home():
                 document.querySelectorAll('.material-row').forEach(row => {
                     const cant = parseFloat(row.querySelector('.mat-cant').value) || 1;
                     const precio = parseFloat(row.querySelector('.mat-precio').value) || 0;
+                    const subMat = cant * precio;
+                    subtotal += subMat;
                     materiales.push({
                         cantidad: cant,
                         material: row.querySelector('.mat-nombre').value,
                         precio_unitario: precio,
-                        subtotal: cant * precio
+                        subtotal: subMat
                     });
                 });
+
+                const ivaPorcentaje = parseFloat(document.getElementById('selectIva').value) || 0;
+                const importeIva = subtotal * (ivaPorcentaje / 100);
+                const totalConIva = subtotal + importeIva;
 
                 const herramientasStr = document.getElementById('editHerramientas').value;
                 const herramientas = herramientasStr.split(',').map(s => s.trim()).filter(Boolean);
@@ -288,7 +324,10 @@ def home():
                     tareas_mano_obra: tareas,
                     materiales: materiales,
                     herramientas: herramientas,
-                    total_presupuesto: parseFloat(document.getElementById('editTotal').value) || 0
+                    subtotal: subtotal,
+                    iva_porcentaje: ivaPorcentaje,
+                    iva_importe: importeIva,
+                    total_presupuesto: totalConIva
                 };
 
                 document.getElementById('loading').classList.remove('hidden');
@@ -316,7 +355,7 @@ def home():
     """
 
 # ==========================================
-# 2. ENDPOINT IA: TRANSCRIPCIÓN Y RELACIÓN DE FONTANERÍA
+# 2. ENDPOINT IA: EXPERTO EN JERGA DE FONTANERÍA
 # ==========================================
 @app.post("/api/analizar")
 async def api_analizar(file: UploadFile = File(...)):
@@ -329,32 +368,48 @@ async def api_analizar(file: UploadFile = File(...)):
         audio_file = client.files.upload(file=temp_path)
         
         prompt = """
-        Eres un maestro fontanero experto realizando presupuestos y planificando obras en España.
-        Escucha el audio y realiza lo siguiente:
-        1. Transcribe lo que dice el fontanero o cliente.
-        2. Deduce todas las TAREAS de mano de obra necesarias (incluso pasos lógicos implícitos como corte de agua, desmontaje, sellado o pruebas de estanqueidad) con su precio estimado de mano de obra.
-        3. Deduce la lista de MATERIALES de fontanería necesarios (tuberías de cobre/PEX/PVC, latiguillos, grifería, juntas, teflón, sifón, llaves de escuadra, etc.) con cantidades y precio unitario aproximado.
-        4. Deduce las HERRAMIENTAS específicas que el fontanero debe llevar en la caja de herramientas para esta intervención (ej. llave grifa, llave inglesa, cortatubos, soplete, máquina de presurización, desatascador de tambor, teflón, etc.).
+        Eres un maestro fontanero e instalador autorizado en España con 30 años de experiencia.
+        Vas a escuchar una nota de voz grabada por un compañero fontanero en plena obra. El profesional hablará de forma coloquial, rápida y usando jerga del oficio.
+
+        DICCIONARIO DE JERGA Y RECONOCIMIENTO FONÉTICO OBLIGATORIO:
+        Si el audio suena parecido a alguno de estos términos, interprétalo siempre dentro del contexto de fontanería:
+        - "Latiguillo", "flexible" -> Latiguillo flexible trenzado de acero inox (1/2", 3/8").
+        - "Llave de escuadra", "llave de corte", "llave de paso", "detentor" -> Válvula de escuadra / llave de corte cromada.
+        - "Machón", "manguito", "racor", "tuerca loca", "entronque", "reducción", "codo", "te" -> Piecerío y racorería de latón o cobre.
+        - "Multicapa", "PEX", "polietileno", "cobre de 15 / 18 / 22", "PVC de 40 / 50 / 110" -> Tuberías de conducción o evacuación.
+        - "Bote sifónico", "sifón botella", "sifón curvo", "válvula de desagüe" -> Elementos de evacuación y desagüe.
+        - "Pasar la guía", "meter el muelle", "karcher", "camión cuba", "chupón" -> Desatasco mecánico o limpieza de tuberías con máquina de tambor / agua a presión.
+        - "Picar la pared", "hacer una roza", "descubrir el tubo", "tapar con perlita / yeso / mortero" -> Apertura de cala/roza en albañilería para localizar avería y posterior tapado.
+        - "Descargador", "mecanismo de cisterna", "flotador", "boya", "tanque bajo" -> Reparación de cisterna de inodoro.
+        - "Termo", "calentador estanco", "grupo de seguridad", "vaso de expansión", "ánodo" -> Agua Caliente Sanitaria (ACS).
+        - "Teflón", "cáñamo", "estopa", "pasta verde", "masilla", "soldar con estaño-plata" -> Materiales de sellado y unión.
+        - Medidas habladas: "de media" (1/2"), "de tres octavos" (3/8"), "de tres cuartos" (3/4"), "de una pulgada" (1").
+
+        INSTRUCCIONES DE SALIDA:
+        1. Transcribe el audio corrigiendo errores fonéticos evidentes para que tenga sentido 100% de fontanería.
+        2. Redacta un resumen técnico formal para el cliente (transformando la jerga coloquial en lenguaje profesional).
+        3. Desglosa todas las TAREAS de mano de obra (incluyendo si menciona picar pared, cortar suministro, desmontar, instalar o probar presión).
+        4. Lista todos los MATERIALES mencionados o necesarios implícitamente (ej. si dice "cambiar grifo y llaves", incluye el grifo, las llaves de escuadra y teflón/juntas).
+        5. Lista las HERRAMIENTAS necesarias para el operario (ej. prensadora multicapa, cortatubos, soplete, llave Stillson/grifa, llave inglesa, taladro percutor/cincel si hay que picar, guía desatascadora, etc.).
 
         Devuelve EXCLUSIVAMENTE un objeto JSON válido con esta estructura exacta:
         {
-          "transcripcion": "Texto literal transcrito del audio",
-          "cliente": "Nombre del cliente si se menciona, o Cliente",
+          "transcripcion": "Transcripción fiel con los términos de fontanería bien escritos",
+          "cliente": "Nombre del cliente si se dice, o 'Cliente'",
           "urgencia": "Normal o Urgente",
-          "resumen_actuacion": "Resumen técnico profesional del trabajo a realizar",
+          "resumen_actuacion": "Descripción técnica y formal del trabajo para presentar en el presupuesto",
           "tareas_mano_obra": [
-            {"concepto": "Desmontaje de sanitario o tubería afectada y preparación", "precio": 45.0},
-            {"concepto": "Instalación y sellado de nueva pieza", "precio": 60.0}
+            {"concepto": "Localización de fuga, apertura de roza y sustitución de tramo en tubo multicapa", "precio": 85.0}
           ],
           "materiales": [
-            {"material": "Latiguillo flexible reforzado 1/2", "cantidad": 2, "precio_unitario": 8.50},
-            {"material": "Llave de escuadra antirretorno", "cantidad": 2, "precio_unitario": 12.00}
+            {"material": "Tubería multicapa 16mm (metros)", "cantidad": 2, "precio_unitario": 4.50},
+            {"material": "Codo prensado multicapa 16mm", "cantidad": 2, "precio_unitario": 6.00}
           ],
           "herramientas": [
-            "Llave inglesa ajustable",
-            "Llave grifa / Stillson",
-            "Cortatubos",
-            "Cinta de teflón / cáñamo"
+            "Prensadora de multicapa (mordaza U16)",
+            "Cortatubos y abocardador/calibrador",
+            "Martillo percutor con cincel para roza",
+            "Llave inglesa y llave grifa"
           ]
         }
         """
@@ -382,7 +437,7 @@ async def api_analizar(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 # ==========================================
-# 3. GENERADOR DE PDF COMPLETO
+# 3. GENERADOR DE PDF CON DESGLOSE DE IVA
 # ==========================================
 @app.post("/api/generar-pdf")
 async def api_generar_pdf(presupuesto: dict = Body(...)):
@@ -397,11 +452,11 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
     estilo_texto = ParagraphStyle('Texto', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#334155"), leading=14)
     
     story.append(Paragraph(f"🔧 {NOMBRE_COMERCIAL_DEFAULT}", estilo_titulo))
-    story.append(Paragraph(f"Teléfono: {TELEFONO_DEFAULT} | Presupuesto y Hoja de Trabajo", estilo_sub))
+    story.append(Paragraph(f"Teléfono: {TELEFONO_DEFAULT} | Presupuesto Oficial y Hoja de Trabajo", estilo_sub))
     
-    story.append(Paragraph("<b>1. Datos del Cliente y Obra</b>", estilo_h2))
-    story.append(Paragraph(f"<b>Cliente:</b> {presupuesto.get('cliente', 'Cliente')} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Urgencia:</b> {presupuesto.get('urgencia', 'Normal')}", estilo_texto))
-    story.append(Paragraph(f"<b>Descripción:</b> {presupuesto.get('resumen_actuacion', '')}", estilo_texto))
+    story.append(Paragraph("<b>1. Datos del Cliente y Memoria de Actuación</b>", estilo_h2))
+    story.append(Paragraph(f"<b>Cliente:</b> {presupuesto.get('cliente', 'Cliente')} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Tipo de servicio:</b> {presupuesto.get('urgencia', 'Normal')}", estilo_texto))
+    story.append(Paragraph(f"<b>Actuación:</b> {presupuesto.get('resumen_actuacion', '')}", estilo_texto))
     story.append(Spacer(1, 8))
     
     # Tabla de Mano de Obra
@@ -425,7 +480,7 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
     story.append(Spacer(1, 8))
 
     # Tabla de Materiales
-    story.append(Paragraph("<b>3. Materiales Necesarios</b>", estilo_h2))
+    story.append(Paragraph("<b>3. Materiales y Piecerío</b>", estilo_h2))
     data_mat = [["Material / Pieza", "Cant.", "Precio U.", "Subtotal"]]
     for m in presupuesto.get('materiales', []):
         cant = float(m.get('cantidad', 1))
@@ -446,18 +501,37 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
         ('PADDING', (0,0), (-1,-1), 6),
     ]))
     story.append(tabla_m)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 14))
+
+    # Tabla Resumen Económico con IVA
+    subtotal = float(presupuesto.get('subtotal', 0.0))
+    iva_porc = int(float(presupuesto.get('iva_porcentaje', 21)))
+    iva_imp = float(presupuesto.get('iva_importe', 0.0))
+    total = float(presupuesto.get('total_presupuesto', 0.0))
+
+    data_totales = [
+        ["Base Imponible (Mano de Obra + Materiales):", f"{subtotal:.2f} €"],
+        [f"IVA ({iva_porc}%):", f"{iva_imp:.2f} €"],
+        ["TOTAL PRESUPUESTO (IVA Incluido):", f"{total:.2f} €"]
+    ]
+    tabla_totales = Table(data_totales, colWidths=[350, 120])
+    tabla_totales.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'RIGHT'),
+        ('FONTNAME', (0,2), (-1,2), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,1), 10),
+        ('FONTSIZE', (0,2), (-1,2), 12),
+        ('TEXTCOLOR', (0,2), (-1,2), colors.HexColor("#15803d")),
+        ('LINEABOVE', (0,2), (-1,2), 1, colors.HexColor("#cbd5e1")),
+        ('PADDING', (0,0), (-1,-1), 4),
+    ]))
+    story.append(tabla_totales)
+    story.append(Spacer(1, 14))
 
     # Herramientas para el profesional
     herramientas = presupuesto.get('herramientas', [])
     if herramientas:
-        story.append(Paragraph("<b>4. Herramientas Recomendadas para la Intervención</b>", estilo_h2))
+        story.append(Paragraph("<b>Anexo Interno: Herramientas recomendadas para la furgoneta</b>", estilo_h2))
         story.append(Paragraph(", ".join(herramientas), estilo_texto))
-        story.append(Spacer(1, 12))
-    
-    total = float(presupuesto.get('total_presupuesto', 0.0))
-    story.append(Paragraph(f"<b>TOTAL PRESUPUESTO (Mano de Obra + Materiales): {total:.2f} €</b>", 
-                           ParagraphStyle('Total', parent=estilo_texto, fontSize=13, textColor=colors.HexColor("#15803d"))))
     
     doc.build(story)
     return {"estado": "ok", "pdf_url": "/descargar-pdf"}
