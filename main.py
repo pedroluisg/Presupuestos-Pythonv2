@@ -42,7 +42,7 @@ def home():
     <body class="bg-slate-900 text-slate-100 min-h-screen p-4 flex flex-col items-center pb-12">
         <div class="w-full max-w-lg bg-slate-800 rounded-2xl shadow-2xl p-6 border border-slate-700 mt-2 text-center">
             <h1 class="text-2xl font-extrabold text-blue-400 mb-1 flex items-center justify-center gap-2">🔧 Asistente de Fontanería</h1>
-            <p class="text-slate-400 text-xs mb-6">Habla con naturalidad usando tu jerga habitual. La IA transcribirá y desglosará tareas, materiales, herramientas e IVA.</p>
+            <p class="text-slate-400 text-xs mb-6">Habla con naturalidad usando tu jerga habitual. La IA transcribirá y desglosará tareas, materiales e IVA.</p>
             
             <!-- GRABACIÓN EN DIRECTO -->
             <div class="flex flex-col items-center gap-3 mb-5">
@@ -175,7 +175,7 @@ def home():
                             <div id="tareasContainer" class="flex flex-col gap-2">
                                 ${(p.tareas_mano_obra || []).map(t => `
                                     <div class="flex gap-2 items-center tarea-row">
-                                        <input type="text" value="${t.concepto}" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white tarea-concepto" placeholder="Descripción de tarea">
+                                        <input type="text" value="${t.concepto}" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white tarea-concepto" placeholder="Descripción breve de tarea">
                                         <input type="number" step="0.01" value="${t.precio}" class="w-24 bg-slate-800 border border-slate-700 rounded p-1.5 text-right text-green-300 font-semibold tarea-precio" onchange="recalcularTotal()">
                                         <button onclick="this.parentElement.remove(); recalcularTotal();" class="text-red-400 hover:text-red-300 px-1">✕</button>
                                     </div>
@@ -199,12 +199,6 @@ def home():
                                     </div>
                                 `).join('')}
                             </div>
-                        </div>
-
-                        <!-- 3. HERRAMIENTAS RECOMENDADAS -->
-                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700">
-                            <label class="font-bold text-purple-300 block mb-1">🧰 Herramientas para llevar a la obra (uso interno):</label>
-                            <input type="text" id="editHerramientas" value="${(p.herramientas || []).join(', ')}" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-200" placeholder="Separadas por comas...">
                         </div>
 
                         <!-- DESGLOSE ECONÓMICO E IVA -->
@@ -339,16 +333,12 @@ def home():
                 const importeIva = subtotal * (ivaPorcentaje / 100);
                 const totalConIva = subtotal + importeIva;
 
-                const herramientasStr = document.getElementById('editHerramientas').value;
-                const herramientas = herramientasStr.split(',').map(s => s.trim()).filter(Boolean);
-
                 const payload = {
                     cliente: document.getElementById('editCliente').value,
                     urgencia: document.getElementById('editUrgencia').value,
                     resumen_actuacion: document.getElementById('editResumen').value,
                     tareas_mano_obra: tareas,
                     materiales: materiales,
-                    herramientas: herramientas,
                     subtotal: subtotal,
                     iva_porcentaje: ivaPorcentaje,
                     iva_importe: importeIva,
@@ -398,43 +388,38 @@ async def api_analizar(file: UploadFile = File(...)):
 
         DICCIONARIO DE JERGA Y RECONOCIMIENTO FONÉTICO OBLIGATORIO:
         Si el audio suena parecido a alguno de estos términos, interprétalo siempre dentro del contexto de fontanería:
-        - "Latiguillo", "flexible" -> Latiguillo flexible trenzado de acero inox (1/2", 3/8").
-        - "Llave de escuadra", "llave de corte", "llave de paso", "detentor" -> Válvula de escuadra / llave de corte cromada.
+        - "Latiguillo", "flexible" -> Latiguillo flexible inox (1/2", 3/8").
+        - "Llave de escuadra", "llave de corte", "llave de paso", "detentor" -> Válvula de escuadra cromada.
         - "Machón", "manguito", "racor", "tuerca loca", "entronque", "reducción", "codo", "te" -> Piecerío y racorería de latón o cobre.
         - "Multicapa", "PEX", "polietileno", "cobre de 15 / 18 / 22", "PVC de 40 / 50 / 110" -> Tuberías de conducción o evacuación.
         - "Bote sifónico", "sifón botella", "sifón curvo", "válvula de desagüe" -> Elementos de evacuación y desagüe.
-        - "Pasar la guía", "meter el muelle", "karcher", "camión cuba", "chupón" -> Desatasco mecánico o limpieza de tuberías con máquina de tambor / agua a presión.
-        - "Picar la pared", "hacer una roza", "descubrir el tubo", "tapar con perlita / yeso / mortero" -> Apertura de cala/roza en albañilería para localizar avería y posterior tapado.
+        - "Pasar la guía", "meter el muelle", "karcher", "camión cuba", "chupón" -> Desatasco mecánico o limpieza de tuberías.
+        - "Picar la pared", "hacer una roza", "descubrir el tubo", "tapar con perlita / yeso / mortero" -> Apertura de roza en albañilería y tapado.
         - "Descargador", "mecanismo de cisterna", "flotador", "boya", "tanque bajo" -> Reparación de cisterna de inodoro.
         - "Termo", "calentador estanco", "grupo de seguridad", "vaso de expansión", "ánodo" -> Agua Caliente Sanitaria (ACS).
         - "Teflón", "cáñamo", "estopa", "pasta verde", "masilla", "soldar con estaño-plata" -> Materiales de sellado y unión.
         - Medidas habladas: "de media" (1/2"), "de tres octavos" (3/8"), "de tres cuartos" (3/4"), "de una pulgada" (1").
 
-        INSTRUCCIONES DE SALIDA:
+        INSTRUCCIONES DE SALIDA (ESTILO MINIMALISTA Y CONCISO):
         1. Transcribe el audio corrigiendo errores fonéticos evidentes para que tenga sentido 100% de fontanería.
-        2. Redacta un resumen técnico formal para el cliente (transformando la jerga coloquial en lenguaje profesional).
-        3. Desglosa todas las TAREAS de mano de obra (incluyendo si menciona picar pared, cortar suministro, desmontar, instalar o probar presión).
-        4. Lista todos los MATERIALES mencionados o necesarios implícitamente (ej. si dice "cambiar grifo y llaves", incluye el grifo, las llaves de escuadra y teflón/juntas).
-        5. Lista las HERRAMIENTAS necesarias para el operario (ej. prensadora multicapa, cortatubos, soplete, llave Stillson/grifa, llave inglesa, taladro percutor/cincel si hay que picar, guía desatascadora, etc.).
+        2. Redacta un resumen técnico breve y directo (máximo 2 líneas).
+        3. Desglosa las TAREAS de mano de obra de forma MUY CONCISA (máximo 6-8 palabras por concepto, directo al grano para que encaje limpio en una línea de tabla).
+        4. Lista los MATERIALES de forma MUY CONCISA (máximo 4-6 palabras por nombre de pieza).
+        5. NO incluyas herramientas.
 
         Devuelve EXCLUSIVAMENTE un objeto JSON válido con esta estructura exacta:
         {
           "transcripcion": "Transcripción fiel con los términos de fontanería bien escritos",
           "cliente": "Nombre del cliente si se dice, o 'Cliente'",
           "urgencia": "Normal o Urgente",
-          "resumen_actuacion": "Descripción técnica y formal del trabajo para presentar en el presupuesto",
+          "resumen_actuacion": "Resumen breve y directo de la intervención",
           "tareas_mano_obra": [
-            {"concepto": "Localización de fuga, apertura de roza y sustitución de tramo en tubo multicapa", "precio": 85.0}
+            {"concepto": "Apertura de roza para localizar tubería", "precio": 45.0},
+            {"concepto": "Reparación de fuga en multicapa 16mm", "precio": 55.0}
           ],
           "materiales": [
-            {"material": "Tubería multicapa 16mm (metros)", "cantidad": 2, "precio_unitario": 4.50},
-            {"material": "Codo prensado multicapa 16mm", "cantidad": 2, "precio_unitario": 6.00}
-          ],
-          "herramientas": [
-            "Prensadora de multicapa (mordaza U16)",
-            "Cortatubos y abocardador/calibrador",
-            "Martillo percutor con cincel para roza",
-            "Llave inglesa y llave grifa"
+            {"material": "Manguito prensado multicapa 16mm", "cantidad": 2, "precio_unitario": 4.80},
+            {"material": "Válvula de escuadra 1/2\"", "cantidad": 2, "precio_unitario": 7.50}
           ]
         }
         """
@@ -484,7 +469,7 @@ async def api_analizar(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 # ==========================================
-# 3. GENERADOR DE PDF CON NUMERACIÓN, FECHA E IVA
+# 3. GENERADOR DE PDF MINIMALISTA Y ENCUADRADO
 # ==========================================
 @app.post("/api/generar-pdf")
 async def api_generar_pdf(presupuesto: dict = Body(...)):
@@ -497,11 +482,12 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
     fecha_str = ahora.strftime("%d/%m/%Y")
     num_presupuesto = f"PRE-{ahora.strftime('%Y%m%d-%H%M')}"
     
-    estilo_titulo = ParagraphStyle('Titulo', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor("#1d4ed8"), spaceAfter=4)
+    estilo_titulo = ParagraphStyle('Titulo', parent=styles['Heading1'], fontSize=17, textColor=colors.HexColor("#1d4ed8"), spaceAfter=4)
     estilo_sub = ParagraphStyle('Sub', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#64748b"), spaceAfter=14)
-    estilo_h2 = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor("#0f172a"), spaceBefore=12, spaceAfter=6)
-    estilo_texto = ParagraphStyle('Texto', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#334155"), leading=14)
-    estilo_legal = ParagraphStyle('Legal', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor("#94a3b8"), spaceBefore=20)
+    estilo_h2 = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=11, textColor=colors.HexColor("#0f172a"), spaceBefore=12, spaceAfter=6)
+    estilo_texto = ParagraphStyle('Texto', parent=styles['Normal'], fontSize=9.5, textColor=colors.HexColor("#334155"), leading=13)
+    estilo_celda = ParagraphStyle('Celda', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#1e293b"), leading=11)
+    estilo_legal = ParagraphStyle('Legal', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor("#94a3b8"), spaceBefore=22)
     
     story.append(Paragraph(f"🔧 {NOMBRE_COMERCIAL_DEFAULT}", estilo_titulo))
     story.append(Paragraph(
@@ -509,22 +495,24 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
         estilo_sub
     ))
     
-    story.append(Paragraph("<b>1. Datos del Cliente y Memoria de Actuación</b>", estilo_h2))
-    story.append(Paragraph(f"<b>Cliente:</b> {presupuesto.get('cliente', 'Cliente')} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Tipo de servicio:</b> {presupuesto.get('urgencia', 'Normal')}", estilo_texto))
+    story.append(Paragraph("<b>1. Datos del Cliente y Actuación</b>", estilo_h2))
+    story.append(Paragraph(f"<b>Cliente:</b> {presupuesto.get('cliente', 'Cliente')} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Servicio:</b> {presupuesto.get('urgencia', 'Normal')}", estilo_texto))
     story.append(Paragraph(f"<b>Actuación:</b> {presupuesto.get('resumen_actuacion', '')}", estilo_texto))
     story.append(Spacer(1, 8))
     
-    # Tabla de Mano de Obra
-    story.append(Paragraph("<b>2. Desglose de Tareas y Mano de Obra</b>", estilo_h2))
-    data_tareas = [["Concepto / Tarea de Fontanería", "Importe"]]
+    # Tabla de Mano de Obra (con Paragraph para evitar que el texto pise otras columnas)
+    story.append(Paragraph("<b>2. Tareas y Mano de Obra</b>", estilo_h2))
+    data_tareas = [["Concepto / Tarea", "Importe"]]
     for t in presupuesto.get('tareas_mano_obra', []):
-        data_tareas.append([t.get('concepto', ''), f"{float(t.get('precio', 0)):.2f} €"])
+        concepto_limpio = Paragraph(str(t.get('concepto', '')), estilo_celda)
+        data_tareas.append([concepto_limpio, f"{float(t.get('precio', 0)):.2f} €"])
     
-    tabla_t = Table(data_tareas, colWidths=[380, 90])
+    tabla_t = Table(data_tareas, colWidths=[420, 90])
     tabla_t.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1e3a8a")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('ALIGN', (1,0), (1,-1), 'RIGHT'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('BACKGROUND', (0,1), (-1,-1), colors.HexColor("#f8fafc")),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
@@ -534,21 +522,23 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
     story.append(tabla_t)
     story.append(Spacer(1, 8))
 
-    # Tabla de Materiales
+    # Tabla de Materiales (con Paragraph para evitar desbordamientos)
     story.append(Paragraph("<b>3. Materiales y Piecerío</b>", estilo_h2))
     data_mat = [["Material / Pieza", "Cant.", "Precio U.", "Subtotal"]]
     for m in presupuesto.get('materiales', []):
         cant = float(m.get('cantidad', 1))
         pu = float(m.get('precio_unitario', 0))
         sub = cant * pu
-        data_mat.append([m.get('material', ''), str(int(cant) if cant.is_integer() else cant), f"{pu:.2f} €", f"{sub:.2f} €"])
+        mat_limpio = Paragraph(str(m.get('material', '')), estilo_celda)
+        data_mat.append([mat_limpio, str(int(cant) if cant.is_integer() else cant), f"{pu:.2f} €", f"{sub:.2f} €"])
     
-    tabla_m = Table(data_mat, colWidths=[250, 50, 80, 90])
+    tabla_m = Table(data_mat, colWidths=[300, 50, 80, 80])
     tabla_m.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#0f172a")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('ALIGN', (1,0), (-1,-1), 'CENTER'),
+        ('ALIGN', (1,0), (1,-1), 'CENTER'),
         ('ALIGN', (2,0), (-1,-1), 'RIGHT'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('BACKGROUND', (0,1), (-1,-1), colors.HexColor("#f8fafc")),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
@@ -569,7 +559,7 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
         [f"IVA ({iva_porc}%):", f"{iva_imp:.2f} €"],
         ["TOTAL PRESUPUESTO (IVA Incluido):", f"{total:.2f} €"]
     ]
-    tabla_totales = Table(data_totales, colWidths=[350, 120])
+    tabla_totales = Table(data_totales, colWidths=[390, 120])
     tabla_totales.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'RIGHT'),
         ('FONTNAME', (0,2), (-1,2), 'Helvetica-Bold'),
@@ -580,13 +570,6 @@ async def api_generar_pdf(presupuesto: dict = Body(...)):
         ('PADDING', (0,0), (-1,-1), 4),
     ]))
     story.append(tabla_totales)
-    story.append(Spacer(1, 14))
-
-    # Herramientas para el profesional
-    herramientas = presupuesto.get('herramientas', [])
-    if herramientas:
-        story.append(Paragraph("<b>Anexo Interno: Herramientas recomendadas para la furgoneta</b>", estilo_h2))
-        story.append(Paragraph(", ".join(herramientas), estilo_texto))
     
     # Pie legal de validez
     story.append(Paragraph(
