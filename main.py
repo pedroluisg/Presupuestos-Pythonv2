@@ -278,33 +278,20 @@ async def api_analizar(file: UploadFile = File(...)):
         audio_file = client.files.upload(file=temp_path)
         
         prompt = """
-        Eres el asistente técnico de un fontanero autónomo experto. Interpreta la nota de voz teniendo en cuenta la jerga de fontanería:
-        - "Fuga" / "Gotea" / "Llave rota" -> Reparación o sustitución de tubería / elemento.
-        - "Latiguillo" -> Sustitución de latiguillo flexible.
-        - "Termo" / "Calentador" -> Instalación o cambio de termo eléctrico.
-        - "Atasco" / "Bote sifónico" -> Desatasco y limpieza de desagüe.
-        - "Grifo" / "Monomando" -> Instalación de grifería.
-
-        Devuelve EXCLUSIVAMENTE un objeto JSON válido (sin bloques markdown ```json), con esta estructura exacta:
+        Eres el asistente técnico de un fontanero autónomo experto. Interpreta la nota de voz teniendo en cuenta la jerga de fontanería.
+        Devuelve EXCLUSIVAMENTE un objeto JSON válido con esta estructura exacta:
         {
           "cliente": "Nombre detectado o Cliente",
           "urgencia": "Normal o Urgente",
-          "resumen_actuacion": "Descripción técnica de la avería y reparación",
+          "resumen_actuacion": "Descripción técnica de la avería",
           "desglose_lineas": [
-            {"servicio_id": "F_01", "concepto": "Reparación de fuga y cambio de latiguillo", "cantidad": 1, "precio_unitario_mano_obra": 60.0, "subtotal_mano_obra": 60.0}
+            {"servicio_id": "F_01", "concepto": "Reparación de fuga", "cantidad": 1, "precio_unitario_mano_obra": 60.0, "subtotal_mano_obra": 60.0}
           ],
-          "materiales_a_utilizar": [
-            {"material": "Latiguillos (unidad)", "cantidad": 1}
-          ],
+          "materiales_a_utilizar": [{"material": "Latiguillos (unidad)", "cantidad": 1}],
           "total_estimado_mano_obra": 60.0,
           "tiempo_total_estimado_horas": 1.0,
           "observaciones_imprevistos": null
         }
-        Tarifas orientativas de fontanería:
-        - Mano de obra / Desplazamiento base: 50€ - 70€
-        - Cambio de latiguillo / grifo: 45€
-        - Desatasco: 80€
-        - Cambio de termo: 140€
         """
         
         response = client.models.generate_content(
@@ -322,6 +309,8 @@ async def api_analizar(file: UploadFile = File(...)):
         return {"presupuesto": json.loads(texto_limpio.strip())}
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()  # Esto imprimirá el error real completo en los logs de Render
         raise HTTPException(status_code=500, detail=str(e))
         
     finally:
