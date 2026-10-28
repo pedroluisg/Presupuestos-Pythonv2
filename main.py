@@ -125,7 +125,7 @@ def home():
             <div class="mt-8 pt-4 border-t border-slate-700/60 text-[10px] text-slate-500 space-y-1 text-center">
                 <p>🔒 <i>Los datos temporales desaparecen en el momento de cerrar su uso.</i></p>
                 <p>© 2026 Asistente Técnico • Creado por PLG s.l.</p>
-                <p>Contacto: <a href="mailto:anaisso@hotmail.com" class="text-blue-400 hover:underline">tu-correo@example.com</a></p>
+                <p>Contacto: <a href="mailto:anaisso@hotmail.com" class="text-blue-400 hover:underline">Enviar Mail</a></p>
             </div>
         </div>
 
