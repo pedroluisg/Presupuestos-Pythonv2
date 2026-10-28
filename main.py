@@ -121,6 +121,12 @@ def home():
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-2"></div>
                 <p class="text-xs text-blue-300">Transcribiendo jerga de fontanería y calculando presupuesto...</p>
             </div>
+            <!-- AVISO LEGAL Y COPYRIGHT -->
+            <div class="mt-8 pt-4 border-t border-slate-700/60 text-[10px] text-slate-500 space-y-1 text-center">
+                <p>🔒 <i>Los datos temporales desaparecen en el momento de cerrar su uso.</i></p>
+                <p>© 2026 Asistente Técnico • Creado por [Tu Nombre]</p>
+                <p>Contacto: <a href="mailto:tu-correo@example.com" class="text-blue-400 hover:underline">tu-correo@example.com</a></p>
+            </div>
         </div>
 
         <!-- PANTALLA DE REVISIÓN Y EDICIÓN -->
