@@ -8,7 +8,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from fastapi import FastAPI, UploadFile, File, Body, HTTPException, Request, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Body, HTTPException, Request, BackgroundTasks, Response
 from fastapi.responses import HTMLResponse, FileResponse
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -23,6 +23,24 @@ if not api_key:
 
 client = genai.Client(api_key=api_key)
 app = FastAPI()
+
+# PARATUS: endpoint ligero para verificar que el servidor FastAPI responde.
+# No llama a Gemini, no genera presupuestos y no registra datos estadisticos.
+_HEALTH_ALLOWED_ORIGINS = frozenset({
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "https://paratus.es",
+    "https://www.paratus.es",
+})
+
+@app.get("/api/health")
+def api_health(request: Request, response: Response):
+    origin = request.headers.get("origin", "")
+    if origin in _HEALTH_ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+    response.headers["Cache-Control"] = "no-store"
+    return {"ok": True}
 
 NOMBRE_COMERCIAL_DEFAULT = "Fontanería y Desatascos El Rápido"
 TELEFONO_DEFAULT = "600123456"
